@@ -109,12 +109,14 @@ void writeFile(int fp, void *buffer, unsigned int dataSize, unsigned int dataCou
         readBlock(_oft[fp].buffer, freeBlock);
     }else{
         unsigned long blockNum = 0;
-        if (MODE_READ_APPEND){
+        if (_oft[fp].openMode==MODE_READ_APPEND){
             blockNum = returnBlockNumFromInode(_oft[fp].inodeBuffer, _oft[fp].fileLength);
+            printf("APPEND: file length %d, blockNum %lu\n\n", _oft[fp].fileLength, blockNum);
         }else{
             blockNum = returnBlockNumFromInode(_oft[fp].inodeBuffer, 0);
         }
          _oft[fp].currentBlockNum = blockNum;
+        printf("current block num: %lu", _oft[fp].currentBlockNum);
         memset(_oft[fp].buffer,0,_oft[fp].blockSize);
         readBlock(_oft[fp].buffer, blockNum);
     }
@@ -132,7 +134,7 @@ void writeFile(int fp, void *buffer, unsigned int dataSize, unsigned int dataCou
 
     //printf("file ptr%d,  writeptr:%d\n",_oft[fp].filePtr, _oft[fp].writePtr);
     unsigned int bufferOffset = 0;
-    while(dataSize % _oft[fp].blockSize != 0){
+    while(dataSize != 0){
         if (dataSize + _oft[fp].writePtr > _oft[fp].blockSize){
             //printf("while > if buffer offset is %d dataSize is %d, writePtr is %d\n", bufferOffset, dataSize,_oft[fp].writePtr );
             memcpy(_oft[fp].buffer + _oft[fp].writePtr, (char*) buffer + bufferOffset, _oft[fp].blockSize - _oft[fp].writePtr);
@@ -140,9 +142,6 @@ void writeFile(int fp, void *buffer, unsigned int dataSize, unsigned int dataCou
             bufferOffset += _oft[fp].blockSize - _oft[fp].writePtr;
             _oft[fp].filePtr += _oft[fp].blockSize - _oft[fp].writePtr;
 
-            if(_oft[fp].filePtr > _oft[fp].fileLength){
-                _oft[fp].fileLength = _oft[fp].filePtr;
-            }
 
             dataSize -= _oft[fp].blockSize - _oft[fp].writePtr;
             _oft[fp].writePtr = 0;
@@ -151,15 +150,25 @@ void writeFile(int fp, void *buffer, unsigned int dataSize, unsigned int dataCou
             flushFile(fp);
 
             //load another block
-            unsigned long freeBlock = findFreeBlock();
-            markBlockBusy(freeBlock);
-            printf("load another block, freeblock is %lu, fileptr is %d\n",freeBlock,_oft[fp].filePtr);
-            setBlockNumInInode(_oft[fp].inodeBuffer,_oft[fp].filePtr, freeBlock);
-            memset(_oft[fp].buffer,0,_oft[fp].blockSize);
-            readBlock(_oft[fp].buffer, freeBlock);
-            _oft[fp].currentBlockNum = freeBlock;
-       
-
+            //
+            if (_oft[fp].filePtr > _oft[fp].fileLength){
+                unsigned long freeBlock = findFreeBlock();
+                markBlockBusy(freeBlock);
+                printf("load another block, freeblock is %lu, fileptr is %d\n",freeBlock,_oft[fp].filePtr);
+                setBlockNumInInode(_oft[fp].inodeBuffer,_oft[fp].filePtr, freeBlock);
+                memset(_oft[fp].buffer,0,_oft[fp].blockSize);
+           // readBlock(_oft[fp].buffer, freeBlock);
+                _oft[fp].currentBlockNum = freeBlock;
+            }else{
+                unsigned long blockNum = returnBlockNumFromInode(_oft[fp].inodeBuffer, _oft[fp].filePtr);
+                printf("fileptr %lu, blocknum %lu\n\n", _oft[fp].filePtr, blockNum);
+                _oft[fp].currentBlockNum = blockNum;
+                //memset(_oft[fp].buffer,0,_oft[fp].blockSize);
+                readBlock(_oft[fp].buffer, blockNum);
+            }
+            if(_oft[fp].filePtr > _oft[fp].fileLength){
+                _oft[fp].fileLength = _oft[fp].filePtr;
+            }
         }else{
             printf("while >  else\n");
             memcpy(_oft[fp].buffer + _oft[fp].writePtr, (char*) buffer + bufferOffset, dataSize);
@@ -241,7 +250,7 @@ void readFile(int fp, void *buffer, unsigned int dataSize, unsigned int dataCoun
 
     printf("readFile: dataSize is %d, readPtr is %d\n",dataSize, _oft[fp].readPtr);
     unsigned int bufferOffset = 0;
-    while(dataSize%_oft[fp].blockSize != 0){
+    while(dataSize != 0){
   
         printf("datasize %d, readptr%d, blocksize %d",dataSize, _oft[fp].readPtr, _oft[fp].blockSize);
         if(dataSize + _oft[fp].readPtr  > _oft[fp].blockSize){
@@ -260,6 +269,7 @@ void readFile(int fp, void *buffer, unsigned int dataSize, unsigned int dataCoun
             unsigned int blockNum = returnBlockNumFromInode(_oft[fp].inodeBuffer, _oft[fp].filePtr);
             printf("readFile: blockNum: %lu fileptr: %d\n",blockNum, _oft[fp].filePtr);
             readBlock(_oft[fp].buffer, blockNum);
+            _oft[fp].currentBlockNum = blockNum;
         }else{
             printf("while > else\n");
             memcpy((char *)buffer+bufferOffset, _oft[fp].buffer + _oft[fp].readPtr, dataSize);
@@ -306,9 +316,7 @@ void delFile(const char *filename){
 void closeFile(int fp){
     if(fp > -1){
 
-        if(_oft[fp].openMode!=MODE_READ_ONLY){
-            flushFile(fp);
-        }
+       
         //release buffer
         free(_oft[fp].buffer);
 

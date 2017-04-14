@@ -69,20 +69,26 @@ void testWrite(){
     writeFile(fp,buffer,5,2);
     closeFile(fp);
 
+    printf("sizeof(char): %lu\n\n", sizeof(char));
+
     fp = openFile("testfile.txt", MODE_NORMAL);
-    char * buffer2 = "testwrite mode normal";
-    writeFile(fp, buffer2, 1, sizeof(buffer2));
+    char * buffer2 = "test write mode normal";
+    printf("buffer2 size %lu\n",sizeof(buffer2));
+    writeFile(fp, buffer2, sizeof(char), 22);
     closeFile(fp);
 
     fp = openFile("testfile.txt", MODE_READ_APPEND);
     char * buffer3 = "test write read append";
-    writeFile(fp, buffer3, 1, sizeof(buffer3));
+
+    printf("buffer3 size %lu\n",sizeof(buffer3));
+    writeFile(fp, buffer3, sizeof(char), 22);
     closeFile(fp);
 
     unsigned int len = getFileLength(filename);
+    printf("\n\n len: %d \n\n", len);
     char *buffer4 = (char*)malloc(sizeof(char)*len);
     fp = openFile(filename, MODE_READ_ONLY);
-    readFile(fp, buffer4, 1, sizeof(buffer4));
+    readFile(fp, buffer4, sizeof(char), len);
     closeFile(fp);
 
     printf("\n\nContent:\n%s\n", buffer4);
