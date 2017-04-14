@@ -397,6 +397,7 @@ void updateFreeList()
 unsigned long *makeInodeBuffer()
 {
 	unsigned long *buffer = (unsigned long *) calloc(sizeof(unsigned long), _fsDescriptor.numInodeEntries);
+    printf("numInodeENtries %d",_fsDescriptor.numInodeEntries);
 	return buffer;
 }
 

@@ -16,12 +16,14 @@ void testReadMulBlock();
 int main(){
  //   testOpen();
  
- //   testWrite();
+    testWrite();
  //   testRead();
-    printf("new");
+  /*  printf("new");
     testWriteMulBlock();
     testReadMulBlock();
     printf("after testOpen\n");
+    */
+    
     return 0;
 }
 
@@ -61,11 +63,29 @@ void testWrite(){
 
     //test write in read only mode
     //pass
-    fp = openFile("test.txt",MODE_READ_ONLY);
+    char *filename = "testfile.txt";
+    fp = openFile("testfile.txt",MODE_READ_ONLY);
     char * buffer = "testWrite";
-    writeFile(fp,buffer,5,0);
+    writeFile(fp,buffer,5,2);
     closeFile(fp);
-    
+
+    fp = openFile("testfile.txt", MODE_NORMAL);
+    char * buffer2 = "testwrite mode normal";
+    writeFile(fp, buffer2, 1, sizeof(buffer2));
+    closeFile(fp);
+
+    fp = openFile("testfile.txt", MODE_READ_APPEND);
+    char * buffer3 = "test write read append";
+    writeFile(fp, buffer3, 1, sizeof(buffer3));
+    closeFile(fp);
+
+    unsigned int len = getFileLength(filename);
+    char *buffer4 = (char*)malloc(sizeof(char)*len);
+    fp = openFile(filename, MODE_READ_ONLY);
+    readFile(fp, buffer4, 1, sizeof(buffer4));
+    closeFile(fp);
+
+    printf("\n\nContent:\n%s\n", buffer4);
     //test create
     //create newfile.txt write to it, then use testRead can read it, but file length is wrong
     fp = openFile("newFile.txt",MODE_CREATE);

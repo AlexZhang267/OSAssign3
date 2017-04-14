@@ -9,19 +9,40 @@ int main(int ac, char **av)
 		return -1;
 	}
 
-    printf("before init FS\n");
     initFS("part.dsk",av[2]);
-    printf("after init fs\n");
-    unsigned int fp = openFile("test.txt",0);
-    printf("after open file\n");
-    char* buffer1;
-    buffer1 = (char*)malloc(30);
-    readFile(fp, buffer1, 10, 0);
-    printf("checkout main\n");
-    printf("buffer1: %s\n",buffer1);
-    char* buffer2;
-    buffer2 = (char*)malloc(10);
-    readFile(fp,buffer2,10,0);
-    printf("buffer2: %s\n",buffer2);
+
+    char *buffer;
+
+    FILE *fp = fopen(av[1],"w");
+    
+    int fp2 = openFile(av[1],MODE_NORMAL);
+
+    if (fp2==-1){
+        exit(-1);
+    }
+
+    unsigned int len = getFileLength(av[1]);
+
+    buffer = (char*)malloc(sizeof(char) * len);
+    
+    readFile(fp2, buffer, sizeof(char), len);
+    fwrite(buffer, sizeof(char), len, fp);
+    
+    //we should not allocate a buffer with len, because maybe len is very large
+    //so there use a loop to read
+    /*int readSize = 0;
+    for(int i = 0; i<len; i += bufferSize){
+        if (len - i < bufferSize){
+            readSize = len - i;
+        }else{
+            readSize = bufferSize;
+        }
+        readFile(fp2, buffer, sizeof(char), bufferSize);
+        fwrite(buffer, sizeof(char), readSize, fp);
+    }*/
+    
+    closeFile(fp2);
+    fclose(fp);
+    closeFS();
 	return 0;
 }
